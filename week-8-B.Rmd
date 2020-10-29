@@ -1,6 +1,8 @@
 ---
 title: "Week 8, Day 2"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -32,22 +34,57 @@ Today, we will be considering `att_chg` as a function of `treatment`.
 
 * Create the mathematical formula for that model here.
 
+$$ att_chg_i \beta_1 treated_i + \beta_2 control_i + \epsilon_i$$
+-att_chg is dependent variable
+-1 independent variable: treatment
+-epsilon represents error
+
 * Describe the ideal Preceptor Table.
+-3 columns: ID, attitude change of treated group, attitude change of control 
+group, ATE
 
 * Write a few sentences about whether or not our data will allow us to answer this question.
-
+The formula and data are generally able to model this, but it is difficult to
+predict for a single individual. The data is from Boston commuters in 2012, and
+immigration attitudes could have broadly changed over that time.
 
 
 ## Scene 2
 
 **Prompt:** There are two ways to interpret our question. The first involves our expectation. We can also think of this as the long-term average, if we did the same experiment over and over again. (Assume that Preceptor is always assigned to the treatment.) What is your posterior probability distribution for Preceptor's *expected* `att_chg`?
 
+```{r}
+fit_obj <- stan_glm(data = week_8,
+                    att_chg ~ treatment - 1,
+                    refresh = 0)
+
+fit_obj %>%
+  as_tibble() %>%
+  ggplot(aes(x = treatmentTreated)) + 
+  geom_histogram(aes(y = after_stat(count/sum(count))), bins = 100) +
+  labs(title = "Posterior Distribution for Attitude change of Preceptor")
+  
+posterior_interval(fit_obj, prob = .95)
+#CI: (.0074, .7815)
+
+```
 
 
 ## Scene 3
 
 **Prompt:** The second way to interpret the question is with regard to a single individual. What will happen to Preceptor next week? Provide a Posterior Predictive Distribution for what you predict will be Preceptor's `att_chg` after treatment.
 
+```{r}
+fit_obj %>% 
+  as_tibble() %>%
+  select(treatmentTreated)
+post <- posterior_predict(fit_obj))
+
+post %>%
+  as_tibble() %>%
+  mutate(across(everything(), as.numeric)) %>%
+  ggplot(aes(x = `1`)) + geom_histogram(bins = 100)
+```
 
 
 ## Challenge Problem
